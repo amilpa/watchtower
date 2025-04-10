@@ -3,8 +3,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const cron = require("node-cron");
-const fetch = require("node-fetch");
-const jwt = require("jsonwebtoken");
+const axios = require("axios"); // Changed from node-fetch to axios
 
 const userRoutes = require("./routes/userRoutes");
 const urlRoutes = require("./routes/urlRoutes");
@@ -16,7 +15,7 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(bodyParser.json());
+app.use(express.json());
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
@@ -38,21 +37,59 @@ app.use("/api/urls", urlRoutes);
 cron.schedule("*/5 * * * *", async () => {
   console.log("Running cron job to check URLs");
   const urls = await Url.find();
-  urls.forEach(async (urlDoc) => {
+
+  for (const urlDoc of urls) {
     try {
       const startTime = Date.now();
-      const response = await fetch(urlDoc.url);
+      const response = await axios.get(urlDoc.url, {
+        timeout: 10000, // 10 second timeout
+        validateStatus: false, // Don't throw error for non-2xx status codes
+      });
       const responseTime = Date.now() - startTime;
-      urlDoc.responseTime = responseTime;
-      urlDoc.status = response.ok ? "up" : "down";
+      const status =
+        response.status >= 200 && response.status < 400 ? "up" : "down";
+
+      // Create new check result
+      const checkResult = {
+        timestamp: new Date(),
+        responseTime: responseTime,
+        status: status,
+        statusCode: response.status,
+      };
+
+      // Update the URL document
       urlDoc.lastChecked = new Date();
+      urlDoc.currentStatus = status;
+      urlDoc.currentResponseTime = responseTime;
+
+      // Add check result to history array (limiting to most recent 1000 entries)
+      urlDoc.history.push(checkResult);
+      if (urlDoc.history.length > 1000) {
+        urlDoc.history.shift(); // Remove oldest entry if over 1000
+      }
+
       await urlDoc.save();
     } catch (error) {
-      urlDoc.status = "down";
+      // Create new check result with error
+      const checkResult = {
+        timestamp: new Date(),
+        status: "down",
+        error: error.message || "Connection failed",
+      };
+
+      // Update the URL document
       urlDoc.lastChecked = new Date();
+      urlDoc.currentStatus = "down";
+
+      // Add check result to history
+      urlDoc.history.push(checkResult);
+      if (urlDoc.history.length > 1000) {
+        urlDoc.history.shift();
+      }
+
       await urlDoc.save();
     }
-  });
+  }
 });
 
 app.listen(PORT, () => {
