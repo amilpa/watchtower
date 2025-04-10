@@ -1,0 +1,29 @@
+{
+  "name": "watchtower-backend",
+  "version": "1.0.0",
+  "description": "Backend for WatchTower URL Monitoring Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "keywords": [
+    "express",
+    "mongodb",
+    "jwt",
+    "node-cron",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "watchtower",
+  "version": "1.0.0",
+  "description": "URL monitoring application with React frontend and Express backend",
+  "main": "index.js",
+  "scripts": {
+    "start": "docker-compose up",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "build": "docker-compose build"
+  },
+  "keywords": [
+    "url",
+    "monitoring",
+    "react",
+    "express",
+    "mongodb",
+    "docker"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
