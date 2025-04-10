@@ -1,14 +1,14 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const cron = require('node-cron');
-const fetch = require('node-fetch');
-const jwt = require('jsonwebtoken');
+const express = require("express");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
+const cron = require("node-cron");
+const fetch = require("node-fetch");
+const jwt = require("jsonwebtoken");
 
-const userRoutes = require('./routes/userRoutes');
-const urlRoutes = require('./routes/urlRoutes');
-const Url = require('./models/Url');
+const userRoutes = require("./routes/userRoutes");
+const urlRoutes = require("./routes/urlRoutes");
+const Url = require("./models/Url");
 
 const app = express();
 dotenv.config();
@@ -25,18 +25,18 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', () => {
-  console.log('Connected to MongoDB');
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+  console.log("Connected to MongoDB");
 });
 
 // Use routes
-app.use('/api/users', userRoutes);
-app.use('/api/urls', urlRoutes);
+app.use("/api/auth", userRoutes);
+app.use("/api/urls", urlRoutes);
 
 // Cron job to check URL status
-cron.schedule('*/5 * * * *', async () => {
-  console.log('Running cron job to check URLs');
+cron.schedule("*/5 * * * *", async () => {
+  console.log("Running cron job to check URLs");
   const urls = await Url.find();
   urls.forEach(async (urlDoc) => {
     try {
@@ -44,11 +44,11 @@ cron.schedule('*/5 * * * *', async () => {
       const response = await fetch(urlDoc.url);
       const responseTime = Date.now() - startTime;
       urlDoc.responseTime = responseTime;
-      urlDoc.status = response.ok ? 'up' : 'down';
+      urlDoc.status = response.ok ? "up" : "down";
       urlDoc.lastChecked = new Date();
       await urlDoc.save();
     } catch (error) {
-      urlDoc.status = 'down';
+      urlDoc.status = "down";
       urlDoc.lastChecked = new Date();
       await urlDoc.save();
     }
