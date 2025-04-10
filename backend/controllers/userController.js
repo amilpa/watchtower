@@ -1,32 +1,38 @@
 const Users = require("../models/User");
-const statusCodes = require("http-status-codes");
 
 const registerUser = async (req, res) => {
-  const user = await Users.create({ ...req.body });
-  const token = user.createJWT();
-  res.status(statusCodes.OK).json({ user: { name: user.name }, token });
+  try {
+    const user = await Users.create({ ...req.body });
+    const token = user.createJWT();
+    res.status(200).json({ user: { name: user.name }, token });
+  } catch (error) {
+    res.status(400).json({ msg: error.message });
+  }
 };
 
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new BadRequestError("Please provide email and password");
+    if (!email || !password) {
+      return res.status(400).json({ msg: "Please provide email and password" });
+    }
+
+    const user = await Users.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ msg: "Account does not exist" });
+    }
+
+    const isPasswordCorrect = await user.comparePassword(password);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ msg: "Invalid password" });
+    }
+
+    const token = user.createJWT();
+    res.status(200).json({ user: { name: user.name }, token });
+  } catch (error) {
+    res.status(500).json({ msg: "Something went wrong, please try again" });
   }
-
-  const user = await Users.findOne({ email });
-  if (!user) {
-    throw new UnauthenticatedError("Account does not exist");
-  }
-
-  const isPasswordCorrect = await user.comparePassword(password);
-  if (!isPasswordCorrect) {
-    throw new UnauthenticatedError("Invalid password");
-  }
-
-  const token = user.createJWT();
-
-  res.status(statusCodes.OK).json({ user: { name: user.name }, token });
 };
 
 module.exports = { registerUser, loginUser };
