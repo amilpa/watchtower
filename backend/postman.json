@@ -1,0 +1,286 @@
+{
+  "info": {
+    "name": "WatchTower API",
+    "description": "API endpoints for the WatchTower URL monitoring service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "User authentication endpoints",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"lama1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create a new user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"lama1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticate and get JWT token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "URL Monitoring",
+      "description": "Endpoints for managing monitored URLs",
+      "item": [
+        {
+          "name": "Add URL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://example.com\",\n    \"name\": \"Example Website\",\n    \"checkInterval\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/urls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls"]
+            },
+            "description": "Add a new URL to monitor"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All URLs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls"]
+            },
+            "description": "Get all URLs monitored by the current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get URL Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urls/{{urlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls", "{{urlId}}"]
+            },
+            "description": "Get details for a specific URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Update URL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Website Name\",\n    \"checkInterval\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/urls/{{urlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls", "{{urlId}}"]
+            },
+            "description": "Update a monitored URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete URL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urls/{{urlId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls", "{{urlId}}"]
+            },
+            "description": "Remove a URL from monitoring"
+          },
+          "response": []
+        },
+        {
+          "name": "Get URL History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urls/{{urlId}}/history?limit=50&page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls", "{{urlId}}", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Get monitoring history for a URL"
+          },
+          "response": []
+        },
+        {
+          "name": "Get URL Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/urls/{{urlId}}/stats?period=24h",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "urls", "{{urlId}}", "stats"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "24h"
+                }
+              ]
+            },
+            "description": "Get uptime statistics for a URL"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "YOUR_JWT_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "urlId",
+      "value": "URL_ID",
+      "type": "string"
+    }
+  ]
+}
