@@ -12,8 +12,7 @@ function Home() {
       <Card>
         <h2 className="text-xl font-semibold mb-4">Monitor Your Websites</h2>
         <p className="mb-4">
-          WatchTower helps you monitor your website uptime and performance. Get
-          real-time alerts when your websites go down.
+          WatchTower helps you monitor your website uptime and performance. 
         </p>
         <div className="flex flex-wrap gap-4">
           <Button onClick={() => navigate("/dashboard")}>
