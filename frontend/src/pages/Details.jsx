@@ -41,6 +41,23 @@ function Details() {
     }
   }, [website, period]);
 
+  useEffect(() => {
+    if (history && history.history) {
+      // Debug log to check history data (remove in production)
+      console.log(`Got ${history.history.length} history entries`);
+
+      if (history.history.length > 0) {
+        const newest = new Date(history.history[0].timestamp);
+        const oldest = new Date(
+          history.history[history.history.length - 1].timestamp
+        );
+        console.log(
+          `Newest: ${newest.toLocaleString()}, Oldest: ${oldest.toLocaleString()}`
+        );
+      }
+    }
+  }, [history]);
+
   const fetchWebsiteDetails = async () => {
     try {
       setLoading(true);
@@ -88,8 +105,10 @@ function Details() {
       const token = localStorage.getItem("authToken");
       if (!token) return;
 
+      // Increase limit to ensure we get enough data for the selected period
+      // (Adjust based on your monitoring frequency - 200 is enough for hourly checks for a week)
       const response = await fetch(
-        `http://localhost:5000/api/urls/${id}/history?limit=50&page=1`,
+        `http://localhost:5000/api/urls/${id}/history?limit=200&page=1`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -165,9 +184,10 @@ function Details() {
       const result = await response.json();
       setTestResult(result);
 
-      // Refresh history after testing
-      await fetchHistory();
+      // Refresh data
       await fetchWebsiteDetails();
+      await fetchHistory();
+      await fetchStats();
     } catch (err) {
       setTestResult({
         error: err.message,
@@ -179,20 +199,69 @@ function Details() {
     }
   };
 
-  // Function to get formatted data for charts
+  // Function to get chart data with simple formatting
   const getChartData = () => {
-    if (!history || !history.history || !Array.isArray(history.history))
+    if (
+      !history ||
+      !history.history ||
+      !Array.isArray(history.history) ||
+      history.history.length === 0
+    )
       return [];
 
-    // Map the history data and sort chronologically (oldest first)
-    return history.history
-      .map((check) => ({
-        time: new Date(check.timestamp).toLocaleTimeString(),
-        timestamp: new Date(check.timestamp).getTime(), // Store timestamp for sorting
-        responseTime: check.responseTime || 0,
-        status: check.status === "up" ? 1 : 0, // 1 for up, 0 for down
-      }))
-      .sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp, oldest first
+    // Map the history data with simple formatting
+    const chartData = history.history
+      .map((check) => {
+        if (!check.timestamp) return null;
+
+        const timestamp = new Date(check.timestamp);
+        if (isNaN(timestamp)) return null;
+
+        return {
+          timestamp: timestamp.getTime(),
+          dateTime: timestamp.toLocaleString(), // Full date and time for tooltip
+          formattedTime: formatTime(timestamp), // Formatted time for X-axis
+          responseTime: check.responseTime || 0,
+          status: check.status === "up" ? 1 : 0,
+        };
+      })
+      .filter((item) => item !== null) // Remove any invalid entries
+      .sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
+
+    return chartData;
+  };
+
+  // Simple function to format time in a readable way
+  const formatTime = (date) => {
+    return date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Simple tooltip that shows the exact date and time
+  const customTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded shadow-md">
+          <p className="font-medium text-sm">{data.dateTime}</p>
+          <p className="text-sm">
+            <span className="font-medium">Status:</span>{" "}
+            {data.status === 1 ? "Up" : "Down"}
+          </p>
+          {data.responseTime !== undefined && (
+            <p className="text-sm">
+              <span className="font-medium">Response Time:</span>{" "}
+              {data.responseTime}ms
+            </p>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
 
   // Function to get status color classes
@@ -432,115 +501,152 @@ function Details() {
         </div>
       </Card>
 
-      {/* Rest of the component remains the same */}
-      {/* Time Period Selection */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Button
-          variant={period === "24h" ? "primary" : "secondary"}
-          onClick={() => setPeriod("24h")}
-        >
-          Last 24 Hours
-        </Button>
-        <Button
-          variant={period === "7d" ? "primary" : "secondary"}
-          onClick={() => setPeriod("7d")}
-        >
-          Last 7 Days
-        </Button>
-        <Button
-          variant={period === "30d" ? "primary" : "secondary"}
-          onClick={() => setPeriod("30d")}
-        >
-          Last 30 Days
-        </Button>
+      {/* Website Monitoring History */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold">Website Monitoring History</h2>
       </div>
 
-      {/* Response Time Chart */}
+      {/* Stats Summary */}
       <Card className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Response Time (ms)</h2>
+        <h2 className="text-xl font-semibold mb-4">Performance Summary</h2>
         {chartData.length > 0 ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="time"
-                  reversed={false} // Setting to false ensures natural chronological order
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                  interval={Math.min(Math.floor(chartData.length / 10), 1)}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="responseTime"
-                  stroke="#3B82F6"
-                  activeDot={{ r: 8 }}
-                  isAnimationActive={false} // Disable animation for better performance
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-green-50 rounded-lg">
+              <p className="text-green-800 font-semibold text-sm">Uptime</p>
+              <p className="text-2xl font-bold">
+                {`${(
+                  (chartData.filter((d) => d.status === 1).length /
+                    chartData.length) *
+                  100
+                ).toFixed(2)}%`}
+              </p>
+            </div>
+            <div className="p-4 bg-yellow-50 rounded-lg">
+              <p className="text-yellow-800 font-semibold text-sm">
+                Avg. Response Time
+              </p>
+              <p className="text-2xl font-bold">
+                {`${(
+                  chartData.reduce((sum, d) => sum + d.responseTime, 0) /
+                  chartData.length
+                ).toFixed(1)} ms`}
+              </p>
+            </div>
           </div>
         ) : (
           <p className="text-center text-gray-500 py-8">
-            No historical data available.
+            No statistics available.
           </p>
         )}
       </Card>
 
-      {/* Status Chart */}
+      {/* Single Response Time & Status Chart */}
       <Card>
-        <h2 className="text-xl font-semibold mb-4">Status History</h2>
+        <h2 className="text-xl font-semibold mb-4">Website Monitoring Chart</h2>
         {chartData.length > 0 ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
+          <div className="relative">
+            {/* Chart header with fixed positioning */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-sm text-gray-500">
+                {chartData.length} data points
+              </div>
+              <div className="text-sm text-blue-600">
+                Scroll horizontally to view all data →
+              </div>
+            </div>
+
+            {/* Horizontally scrollable container */}
+            <div
+              className="overflow-x-auto pb-4"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {/* Set a minimum width based on data points - adjust the multiplier as needed */}
+              <div
+                style={{
+                  height: "400px",
+                  width: `${Math.max(100, chartData.length * 20)}%`,
+                  minWidth: "100%",
+                  maxWidth: chartData.length <= 10 ? "100%" : undefined,
                 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="time"
-                  reversed={false}
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                  interval={Math.min(Math.floor(chartData.length / 10), 1)}
-                />
-                <YAxis
-                  domain={[0, 1]}
-                  ticks={[0, 1]}
-                  tickFormatter={(tick) => (tick === 1 ? "Up" : "Down")}
-                />
-                <Tooltip formatter={(value) => (value === 1 ? "Up" : "Down")} />
-                <Legend />
-                <Line
-                  type="stepAfter"
-                  dataKey="status"
-                  stroke="#22C55E"
-                  dot={{ r: 4 }}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 60, // More space for X-axis labels
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="timestamp"
+                      type="number"
+                      domain={["dataMin", "dataMax"]}
+                      tickFormatter={(timestamp) => {
+                        const date = new Date(timestamp);
+                        return date.toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }}
+                      scale="time"
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={chartData.length <= 30 ? 0 : undefined} // Show all ticks if <= 30 points
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      orientation="left"
+                      label={{
+                        value: "Response Time (ms)",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      domain={[0, 1]}
+                      ticks={[0, 1]}
+                      tickFormatter={(value) => (value === 1 ? "Up" : "Down")}
+                      label={{
+                        value: "Status",
+                        angle: 90,
+                        position: "insideRight",
+                      }}
+                    />
+                    <Tooltip content={customTooltip} />
+                    <Legend />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="responseTime"
+                      name="Response Time"
+                      stroke="#3B82F6"
+                      dot={{ r: 3 }} // Smaller dots for less visual clutter
+                      activeDot={{ r: 6 }} // Larger active dot for better interaction
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="stepAfter"
+                      dataKey="status"
+                      name="Status"
+                      stroke="#22C55E"
+                      dot={{ r: 3 }} // Smaller dots for less visual clutter
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Optional shadow indicator for horizontal scroll */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
           </div>
         ) : (
           <p className="text-center text-gray-500 py-8">
