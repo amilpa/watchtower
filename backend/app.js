@@ -7,6 +7,7 @@ const axios = require("axios"); // Changed from node-fetch to axios
 const userRoutes = require("./routes/userRoutes");
 const urlRoutes = require("./routes/urlRoutes");
 const Url = require("./models/Url");
+const cors = require("cors");
 
 const app = express();
 dotenv.config();
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+app.use(cors());
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI);
