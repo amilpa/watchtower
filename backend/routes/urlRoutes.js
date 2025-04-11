@@ -17,4 +17,7 @@ router.delete("/:id", urlController.deleteUrl);
 router.get("/:id/history", urlController.getUrlHistory);
 router.get("/:id/stats", urlController.getUrlStats);
 
+// Test URL immediately
+router.post("/:id/test", urlController.testUrl);
+
 module.exports = router;

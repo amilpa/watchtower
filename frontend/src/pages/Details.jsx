@@ -25,6 +25,8 @@ function Details() {
   const [period, setPeriod] = useState("24h");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [testingNow, setTestingNow] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     // Fetch website details when the component mounts or ID changes
@@ -69,6 +71,7 @@ function Details() {
 
       const data = await response.json();
       setWebsite(data);
+      console.log(stats);
 
       // Now fetch the history and stats
       await Promise.all([fetchHistory(), fetchStats()]);
@@ -125,9 +128,54 @@ function Details() {
 
       const data = await response.json();
       setStats(data);
-      console.log("Website stats:", stats);
     } catch (err) {
       console.error("Error fetching website stats:", err);
+    }
+  };
+
+  // New function to test the URL in real-time
+  const testUrlNow = async () => {
+    if (!website || testingNow) return;
+
+    try {
+      setTestingNow(true);
+      setTestResult(null);
+
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/api/urls/${id}/test`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to test website");
+      }
+
+      const result = await response.json();
+      setTestResult(result);
+
+      // Refresh history after testing
+      await fetchHistory();
+      await fetchWebsiteDetails();
+    } catch (err) {
+      setTestResult({
+        error: err.message,
+        success: false,
+      });
+      console.error("Error testing website:", err);
+    } finally {
+      setTestingNow(false);
     }
   };
 
@@ -251,9 +299,93 @@ function Details() {
         {website.name || new URL(website.url).hostname}
       </h1>
 
-      {/* Website Overview Card */}
+      {/* Website Overview Card with Test Button */}
       <Card className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Website Overview</h2>
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-xl font-semibold">Website Overview</h2>
+          <Button variant="primary" onClick={testUrlNow} disabled={testingNow}>
+            {testingNow ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Testing Now...
+              </span>
+            ) : (
+              "Test Now"
+            )}
+          </Button>
+        </div>
+
+        {/* Test Result Display */}
+        {testResult && (
+          <div
+            className={`p-3 mb-4 rounded ${
+              testResult.success
+                ? "bg-green-50 text-green-800"
+                : "bg-red-50 text-red-800"
+            }`}
+          >
+            <div className="flex items-center">
+              {testResult.success ? (
+                <svg
+                  className="h-5 w-5 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="h-5 w-5 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
+              <span className="font-medium">
+                {testResult.success
+                  ? `Test successful! Response time: ${testResult.responseTime}ms`
+                  : `Test failed: ${
+                      testResult.error || "Could not reach the website"
+                    }`}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-gray-700">
@@ -300,6 +432,7 @@ function Details() {
         </div>
       </Card>
 
+      {/* Rest of the component remains the same */}
       {/* Time Period Selection */}
       <div className="mb-6 flex flex-wrap gap-2">
         <Button

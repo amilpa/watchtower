@@ -252,3 +252,97 @@ exports.getUrlStats = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * Test a URL immediately and record the results
+ */
+exports.testUrl = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the URL in the database
+    const url = await Url.findOne({
+      _id: id,
+      user: req.user.userId,
+    });
+
+    if (!url) {
+      return res.status(404).json({ message: "URL not found" });
+    }
+
+    // Test the URL immediately
+    try {
+      const startTime = Date.now();
+      const response = await axios.get(url.url, {
+        timeout: 10000,
+        validateStatus: false, // Don't throw on HTTP error status codes
+      });
+      const responseTime = Date.now() - startTime;
+      const status =
+        response.status >= 200 && response.status < 400 ? "up" : "down";
+
+      // Create check result
+      const checkResult = {
+        timestamp: new Date(),
+        responseTime: responseTime,
+        status: status,
+        statusCode: response.status,
+        manual: true, // Flag that this was a manual test
+      };
+
+      // Update the URL document with the new check
+      url.lastChecked = new Date();
+      url.currentStatus = status;
+      url.currentResponseTime = responseTime;
+
+      // Add to history, maintaining the limit of entries
+      url.history.push(checkResult);
+      if (url.history.length > 100) {
+        url.history = url.history.slice(-100); // Keep only the last 100 entries
+      }
+
+      await url.save();
+
+      return res.status(200).json({
+        success: true,
+        status: status,
+        responseTime: responseTime,
+        statusCode: response.status,
+        url: url.url,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      // Create check result with error
+      const checkResult = {
+        timestamp: new Date(),
+        status: "down",
+        error: error.message || "Connection failed",
+        manual: true, // Flag that this was a manual test
+      };
+
+      // Update URL document with failure information
+      url.lastChecked = new Date();
+      url.currentStatus = "down";
+      url.currentResponseTime = null;
+
+      // Add to history, maintaining the limit of entries
+      url.history.push(checkResult);
+      if (url.history.length > 100) {
+        url.history = url.history.slice(-100); // Keep only the last 100 entries
+      }
+
+      await url.save();
+
+      return res.status(200).json({
+        success: false,
+        status: "down",
+        error: error.message || "Connection failed",
+        url: url.url,
+        timestamp: new Date(),
+      });
+    }
+  } catch (error) {
+    console.error("Error testing URL:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
