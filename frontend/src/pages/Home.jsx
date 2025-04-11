@@ -7,7 +7,7 @@ function Home() {
   const isAuthenticated = localStorage.getItem("authToken") !== null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-12 py-8">
       <h1 className="text-3xl font-bold mb-6">Welcome to WatchTower</h1>
       <Card>
         <h2 className="text-xl font-semibold mb-4">Monitor Your Websites</h2>

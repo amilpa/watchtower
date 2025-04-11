@@ -22,7 +22,7 @@ function Details() {
   const [website, setWebsite] = useState(null);
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
-  const [period, setPeriod] = useState("24h");
+  const [period] = useState("24h");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [testingNow, setTestingNow] = useState(false);
@@ -341,7 +341,7 @@ function Details() {
   const chartData = getChartData();
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-12 py-8">
       <div className="flex items-center mb-6">
         <Link
           to="/dashboard"
