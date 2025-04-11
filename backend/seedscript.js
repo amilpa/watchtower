@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const User = require("./models/User");
 const Url = require("./models/Url");
-const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 
 // Load environment variables
@@ -58,17 +57,19 @@ function generateRandomStatus() {
 }
 
 /**
- * Generate sample history data for the specified number of days
- * @param {number} days Number of days of history to generate
+ * Generate a small number of recent history points
+ * @param {number} numPoints Number of data points to generate
+ * @param {number} minutesBetweenChecks Minutes between each check
  * @returns {Array} Array of check results
  */
-function generateSampleHistory(days) {
+function generateRecentHistory(numPoints, minutesBetweenChecks = 30) {
   const now = new Date();
   const history = [];
 
-  // Generate one entry roughly every hour for the specified number of days
-  for (let i = 0; i < days * 24; i++) {
-    const timestamp = new Date(now - i * 60 * 60 * 1000); // Go back i hours
+  // Generate a small number of entries at regular intervals
+  for (let i = 0; i < numPoints; i++) {
+    // Go back i checks
+    const timestamp = new Date(now - i * minutesBetweenChecks * 60 * 1000);
 
     // Get random status
     const statusInfo = generateRandomStatus();
@@ -92,7 +93,7 @@ function generateSampleHistory(days) {
 }
 
 /**
- * Create a demo user and sample URLs with monitoring history
+ * Create a demo user with two sample URLs and minimal recent monitoring history
  */
 async function seedSampleData() {
   try {
@@ -102,9 +103,7 @@ async function seedSampleData() {
 
     // Create demo user with a password that meets the validation requirements
     console.log("Creating demo user...");
-
-    // Password with at least 8 characters, letters, and numbers
-    const validPassword = "amil1234";
+    const validPassword = "amil1234"; // Make sure this meets your password requirements
 
     const demoUser = new User({
       name: "Demo User",
@@ -115,51 +114,88 @@ async function seedSampleData() {
     const savedUser = await demoUser.save();
     console.log("Demo user created successfully!");
 
-    // Sample websites to monitor
+    // Just two sample websites to monitor
     const websites = [
       { url: "https://example.com", name: "Example Website" },
-      { url: "https://google.com", name: "Google" },
       { url: "https://github.com", name: "GitHub" },
-      { url: "https://stackoverflow.com", name: "Stack Overflow" },
-      { url: "https://reactjs.org", name: "React Docs" },
     ];
 
     // Delete any existing URLs for this user
     await Url.deleteMany({ user: savedUser._id });
 
-    // Create sample URLs with history
+    // Create sample URLs with history - fewer data points at shorter intervals
     console.log("Creating sample URL monitoring data...");
-    let urlsCreated = 0;
 
-    for (const site of websites) {
-      // Generate 30 days of sample history
-      const history = generateSampleHistory(30);
+    // Generate 8 points with 30-minute intervals for the first site (covers last 4 hours)
+    const exampleHistory = generateRecentHistory(8, 30);
 
-      // Get the most recent status info for currentStatus
-      const mostRecent = history[0];
+    // Generate 6 points with 20-minute intervals for the second site (covers last 2 hours)
+    const githubHistory = generateRecentHistory(6, 20);
 
-      const newUrl = new Url({
-        url: site.url,
-        name: site.name,
-        user: savedUser._id,
-        checkInterval: Math.floor(Math.random() * 5) + 1, // Random interval between 1-5 minutes
-        lastChecked: new Date(),
-        currentStatus: mostRecent.status,
-        currentResponseTime: mostRecent.responseTime,
-        history: history.reverse(), // Newest first in the array
-      });
+    // Create the first URL
+    const mostRecentExample = exampleHistory[0];
+    const exampleUrl = new Url({
+      url: websites[0].url,
+      name: websites[0].name,
+      user: savedUser._id,
+      checkInterval: 30,
+      lastChecked: new Date(),
+      currentStatus: mostRecentExample.status,
+      currentResponseTime: mostRecentExample.responseTime,
+      history: exampleHistory.reverse(), // Newest first in the array
+    });
+    await exampleUrl.save();
+    console.log(
+      `Created URL 1/2: ${websites[0].name} (${exampleHistory.length} data points)`
+    );
 
-      await newUrl.save();
-      urlsCreated++;
-      console.log(
-        `Created URL ${urlsCreated}/${websites.length}: ${site.name}`
-      );
-    }
+    // Create the second URL
+    const mostRecentGithub = githubHistory[0];
+    const githubUrl = new Url({
+      url: websites[1].url,
+      name: websites[1].name,
+      user: savedUser._id,
+      checkInterval: 20,
+      lastChecked: new Date(),
+      currentStatus: mostRecentGithub.status,
+      currentResponseTime: mostRecentGithub.responseTime,
+      history: githubHistory.reverse(), // Newest first in the array
+    });
+    await githubUrl.save();
+    console.log(
+      `Created URL 2/2: ${websites[1].name} (${githubHistory.length} data points)`
+    );
 
-    console.log("Sample data seeded successfully!");
+    // Detailed time information for verification
+    const oldestExampleTime = new Date(
+      exampleHistory[exampleHistory.length - 1].timestamp
+    );
+    const oldestGithubTime = new Date(
+      githubHistory[githubHistory.length - 1].timestamp
+    );
+
+    console.log("\nSample data seeded successfully!");
     console.log("Demo account:");
     console.log("  Email: demo@example.com");
-    console.log("  Password: DemoPass123");
+    console.log("  Password: amil1234");
+
+    // Print some stats about the data
+    console.log("\nData Summary:");
+    console.log(
+      `Example Website: ${exampleHistory.length} checks over ${
+        (8 * 30) / 60
+      } hours (30-minute intervals)`
+    );
+    console.log(`  Oldest check: ${oldestExampleTime.toLocaleString()}`);
+    console.log(`  Newest check: ${new Date().toLocaleString()}`);
+
+    console.log(
+      `GitHub: ${githubHistory.length} checks over ${
+        (6 * 20) / 60
+      } hours (20-minute intervals)`
+    );
+    console.log(`  Oldest check: ${oldestGithubTime.toLocaleString()}`);
+    console.log(`  Newest check: ${new Date().toLocaleString()}`);
   } catch (error) {
     console.error("Error seeding data:", error);
   } finally {
