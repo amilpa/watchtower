@@ -166,18 +166,6 @@ function Dashboard() {
     navigate("/");
   };
 
-  // Function to get status color classes based on status
-  const getStatusClasses = (status) => {
-    switch (status) {
-      case "up":
-        return "bg-green-100 text-green-800";
-      case "down":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-yellow-100 text-yellow-800";
-    }
-  };
-
   return (
     <div className="container mx-auto px-12 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -283,88 +271,97 @@ function Dashboard() {
             </p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
             {websites.map((site) => (
-              <Card key={site._id}>
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-medium">
-                    {site.name || new URL(site.url).hostname}
-                  </h3>
-                  <button
-                    onClick={() => handleDeleteUrl(site._id)}
-                    disabled={deletingId === site._id}
-                    className="text-gray-400 hover:text-red-600 transition-colors focus:outline-none"
-                    aria-label="Delete website"
-                  >
-                    {deletingId === site._id ? (
-                      <svg
-                        className="animate-spin h-5 w-5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                    ) : (
-                      <svg
-                        className="h-5 w-5"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                <p className="text-gray-500 text-sm mb-3 truncate">
-                  {site.url}
-                </p>
-                <div className="flex justify-between items-center">
-                  <span
-                    className={`inline-block px-2 py-1 text-xs rounded ${getStatusClasses(
-                      site.currentStatus
-                    )}`}
-                  >
-                    Status:{" "}
-                    {site.currentStatus
-                      ? site.currentStatus.charAt(0).toUpperCase() +
-                        site.currentStatus.slice(1)
-                      : "Unknown"}
-                  </span>
-                  {site.responseTime && (
-                    <span className="text-sm text-gray-500">
-                      Response: {site.responseTime}ms
-                    </span>
-                  )}
-                </div>
+              <Card key={site._id} className="py-2">
+                <div className="flex flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                    <span
+                      className={`inline-block w-3 h-3 rounded-full ${
+                        site.currentStatus === "up"
+                          ? "bg-green-500"
+                          : site.currentStatus === "down"
+                          ? "bg-red-500"
+                          : "bg-yellow-500"
+                      }`}
+                      title={
+                        site.currentStatus
+                          ? site.currentStatus.charAt(0).toUpperCase() +
+                            site.currentStatus.slice(1)
+                          : "Unknown"
+                      }
+                    ></span>
 
-                {/* Add this button to navigate to details */}
-                <div className="mt-4 text-right">
-                  <Button
-                    variant="secondary"
-                    onClick={() => navigate(`/details/${site._id}`)}
-                  >
-                    View Details
-                  </Button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">
+                        {site.name || new URL(site.url).hostname}
+                      </h3>
+                    </div>
+
+                    <div className="hidden md:block text-sm text-gray-500 truncate max-w-xs">
+                      {site.url}
+                    </div>
+
+                    {site.responseTime && (
+                      <span className="text-sm text-gray-500 whitespace-nowrap">
+                        {site.responseTime}ms
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => navigate(`/details/${site._id}`)}
+                    >
+                      Details
+                    </Button>
+                    <button
+                      onClick={() => handleDeleteUrl(site._id)}
+                      disabled={deletingId === site._id}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors focus:outline-none"
+                      aria-label="Delete website"
+                    >
+                      {deletingId === site._id ? (
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                      ) : (
+                        <svg
+                          className="h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </Card>
             ))}
