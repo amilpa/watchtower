@@ -356,6 +356,16 @@ function Dashboard() {
                     </span>
                   )}
                 </div>
+
+                {/* Add this button to navigate to details */}
+                <div className="mt-4 text-right">
+                  <Button
+                    variant="secondary"
+                    onClick={() => navigate(`/details/${site._id}`)}
+                  >
+                    View Details
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
