@@ -18,7 +18,8 @@ RUN npm run build
 
 # Serve the built app with a lightweight web server.
 FROM nginx:alpine
-COPY --from=build /usr/src/app/build /usr/share/nginx/html
+# Update this line to use 'dist' instead of 'build'
+COPY --from=build /usr/src/app/dist /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
