@@ -2,6 +2,8 @@
 
 A modern website monitoring application that helps you track your website uptime and performance in real-time.
 
+Demo Video - [Click here](https://www.loom.com/share/279daec5b1694a21b64c2b2a1c144622?sid=4b702532-ec09-461b-a0c5-9798e14f863a)
+
 ## Features
 
 - Real-time Monitoring: Track website status and response times
